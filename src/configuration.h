@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAX_PROBE_DISABLE_LENGTH 80
 #define TM_MAX_WINDOW_LENGTH (1 /*h*/ * 60 /*m*/)
 #define RECORD_RETENTION_ENABLED_DEFAULT false
 #define RECORD_SERVER_DELIVERY_ENABLED_DEFAULT true
@@ -126,5 +127,8 @@ bool record_retention_enabled_config(void);
 
 /* Gets whether records should be sent to server_addr */
 bool record_server_delivery_enabled_config(void);
+
+/* Gets whether a probe matching origin is disabled */
+bool probe_disabled(char *origin);
 
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */

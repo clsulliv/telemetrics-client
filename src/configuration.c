@@ -382,4 +382,27 @@ bool record_server_delivery_enabled_config(void)
         initialize_config();
         return config.boolValues[CONF_RECORD_SERVER_DELIVERY_ENABLED];
 }
+
+bool probe_disabled(char *origin) {
+        if (origin != NULL) {
+                initialize_config();
+                /* Account for _disabled and null byte */
+                if ((strlen(origin) + 10) < MAX_PROBE_DISABLE_LENGTH){
+                        char probe_setting[MAX_PROBE_DISABLE_LENGTH] = "";
+                        char *ptr;
+                        strcat(probe_setting, origin);
+                        strcat(probe_setting, "_disabled");
+                        ptr = nc_hashmap_get(nc_hashmap_get(keyfile, "settings"), probe_setting);
+                        if (ptr) {
+                                if (strcasecmp(ptr, "TRUE") == 0) {
+                                        return true;
+                                }
+                                if (strcasecmp(ptr, "1") == 0) {
+                                        return true;
+                                }
+                        }
+                }
+        }
+        return false;
+}
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */
