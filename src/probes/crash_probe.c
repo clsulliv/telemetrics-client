@@ -40,6 +40,7 @@
 #include "log.h"
 #include "probe.h"
 #include "telemetry.h"
+#include "util.h"
 
 static Dwfl *d_core = NULL;
 
@@ -408,18 +409,6 @@ static int process_corefile(nc_string **backtrace)
         return 0;
 fail:
         return -1;
-}
-
-static bool startswith(const char *full, const char *prefix)
-{
-        while (*prefix) {
-                if (*prefix != *full) {
-                        return false;
-                }
-                full++;
-                prefix++;
-        }
-        return true;
 }
 
 static bool in_clr_build(char *fullpath)

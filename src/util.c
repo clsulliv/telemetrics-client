@@ -166,6 +166,28 @@ int get_random_id(char **buff)
 }
 
 /**
+ * Verifies whether a string is the beginning of another string
+ *
+ * @param full string to compare against
+ * @param substring to check
+ *
+ * @return true if full starts with prefix, otherwise false
+ *
+ */
+bool startswith(const char *full, const char *prefix)
+{
+        while (*prefix) {
+                if (*prefix != *full) {
+                        return false;
+                }
+                full++;
+                prefix++;
+        }
+        return true;
+}
+
+
+/**
  * Validate classification value. A valid classification
  * is a string with 2 slashes, with max length of
  * MAX_CLASS_LENGTH and strings betweeb slashes should

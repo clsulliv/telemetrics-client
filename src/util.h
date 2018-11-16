@@ -33,6 +33,8 @@ long get_directory_size(const char *sdir);
 /* Initialize buff and copy generated id */
 int get_random_id(char **buff);
 
+bool startswith(const char *full, const char *prefix);
+
 /* Validates classification value */
 int validate_classification(char *classification);
 
