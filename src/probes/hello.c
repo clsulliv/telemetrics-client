@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         }
 
         if ((ret = tm_create_record(&tm_handle, severity, classification,
-                                    payload_version)) < 0) {
+                                    payload_version, "hprobe")) < 0) {
                 printf("Failed to create record: %s\n", strerror(-ret));
                 ret = 1;
                 goto fail;

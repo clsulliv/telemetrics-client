@@ -52,6 +52,7 @@
 #include <stdbool.h>
 
 struct telem_ref {
+        char * record_origin;
         struct telem_record *record;
 };
 
@@ -86,7 +87,7 @@ void tm_set_config_file(char *c_file);
  * @return 0 on success, or a negative errno-style value on error
  */
 int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
-                     char *classification, uint32_t payload_version);
+                     char *classification, uint32_t payload_version, char *origin);
 
 /**
  * Sets the event_id to a user defined id

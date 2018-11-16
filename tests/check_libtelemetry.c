@@ -34,7 +34,7 @@ void create_setup(void)
         if (ref) {
                 return;
         }
-        ret = tm_create_record(&ref, 1, "t/t/t", 2000);
+        ret = tm_create_record(&ref, 1, "t/t/t", 2000, "test");
 
         /* FIXME: it would be better to SKIP the tests in this case, because
          * they depend on an opt-in state, but I haven't figured out how to SKIP
@@ -101,7 +101,7 @@ void create_teardown(void)
 START_TEST(record_create_invalid_class1)
 {
         int ret;
-        ret = tm_create_record(&ref, 1, "t/t", 2000);
+        ret = tm_create_record(&ref, 1, "t/t", 2000, "test");
         ck_assert_msg(ret != -ECONNREFUSED,
                       "Opt-out enabled. Opt in to run this test");
         ck_assert(ret == -EINVAL);
@@ -111,7 +111,7 @@ END_TEST
 START_TEST(record_create_invalid_class2)
 {
         int ret;
-        ret = tm_create_record(&ref, 1, "t/t/t/t", 2000);
+        ret = tm_create_record(&ref, 1, "t/t/t/t", 2000, "test");
         ck_assert_msg(ret != -ECONNREFUSED,
                       "Opt-out enabled. Opt in to run this test");
         ck_assert(ret == -EINVAL);
@@ -124,7 +124,7 @@ START_TEST(record_create_severity_underflow)
         int ret;
 
         // Severity of 0 is too low; raise it to 1, the minimum
-        ret = tm_create_record(&ref, 0, "a/a/a", 2000);
+        ret = tm_create_record(&ref, 0, "a/a/a", 2000, "test");
         ck_assert_msg(ret != -ECONNREFUSED,
                       "Opt-out enabled. Opt in to run this test");
 
@@ -144,7 +144,7 @@ START_TEST(record_create_severity_overflow)
         int ret;
 
         // Severity of 5 is too high; lower it to 4, the maximum
-        ret = tm_create_record(&ref, 5, "b/b/b", 2000);
+        ret = tm_create_record(&ref, 5, "b/b/b", 2000, "test");
         ck_assert_msg(ret != -ECONNREFUSED,
                       "Opt-out enabled. Opt in to run this test");
 
@@ -166,7 +166,7 @@ void event_id_setup(void)
                 return;
         }
 
-        ret = tm_create_record(&ref, 1, "t/t/t", 2000);
+        ret = tm_create_record(&ref, 1, "t/t/t", 2000, "test");
         original_event_id = strdup(ref->record->headers[TM_EVENT_ID]);
         if (!original_event_id) {
                 return;

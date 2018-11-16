@@ -351,7 +351,7 @@ static bool send_data(nc_string **backtrace, uint32_t severity, char *class)
         struct telem_ref *handle = NULL;
         int ret;
 
-        if ((ret = tm_create_record(&handle, severity, class, version)) < 0) {
+        if ((ret = tm_create_record(&handle, severity, class, version, "crashprobe")) < 0) {
                 telem_log(LOG_ERR, "Failed to create record: %s",
                           strerror(-ret));
                 goto fail;
