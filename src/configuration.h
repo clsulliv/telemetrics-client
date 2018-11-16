@@ -54,10 +54,21 @@ enum config_bool_keys {
         CONF_BOOL_MAX
 };
 
+enum config_probes {
+        CONF_PROBE_MIN = CONF_BOOL_MAX,
+        CONF_BERTPROBE_DISABLED,
+        CONF_CRASHPROBE_DISABLED,
+        CONF_HPROBE_DISABLED,
+        CONF_JOURNALPROBE_DISABLED,
+        CONF_OOPSPROBE_DISABLED,
+        CONF_PSTORE_DISABLED,
+        CONF_PROBE_MAX
+};
+
 typedef struct configuration {
         char *strValues[CONF_STR_MAX];
         int64_t intValues[CONF_INT_MAX];
-        bool boolValues[CONF_BOOL_MAX];
+        bool boolValues[CONF_PROBE_MAX];
         bool initialized;
         char *config_file;
 } configuration;
@@ -126,5 +137,8 @@ bool record_retention_enabled_config(void);
 
 /* Gets whether records should be sent to server_addr */
 bool record_server_delivery_enabled_config(void);
+
+/* Gets whether a probe matching origin is disabled */
+bool probe_disabled(char *origin);
 
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */
