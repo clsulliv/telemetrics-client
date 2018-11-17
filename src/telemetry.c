@@ -782,6 +782,19 @@ void tm_set_config_file(char *c_file)
         set_config_file(c_file);
 }
 
+bool check_opt_out(struct telem_ref *t_ref) {
+        int k = 0;
+        struct stat unused;
+        k = stat(TM_OPT_OUT_FILE, &unused);
+        if (k == 0) {
+                return true;
+        }
+        if (t_ref->record_origin != NULL) {
+                return probe_disabled(t_ref->record_origin);
+        }
+        return false;
+}
+
 /**
  * Helper function for tm_create_record().  Allocate all of the headers
  * for a new telemetrics record. The parameters are passed through from
@@ -978,6 +991,10 @@ int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
                 free(*t_ref);
         }
 
+        if (check_opt_out(*t_ref)) {
+                return -ECONNREFUSED;
+        }
+
         return ret;
 }
 
@@ -1012,11 +1029,8 @@ int tm_set_payload(struct telem_ref *t_ref, char *payload)
 {
         size_t payload_len;
         int ret = 0;
-        int k = 0;
-        struct stat unused;
 
-        k = stat(TM_OPT_OUT_FILE, &unused);
-        if (k == 0) {
+        if (check_opt_out(t_ref)) {
                 // Bail early if opt-out is enabled
                 return -ECONNREFUSED;
         }
@@ -1271,11 +1285,8 @@ int tm_send_record(struct telem_ref *t_ref)
         char *data = NULL;
         size_t offset = 0;
         int ret = 0;
-        int k = 0;
-        struct stat unused;
 
-        k = stat(TM_OPT_OUT_FILE, &unused);
-        if (k == 0) {
+        if (check_opt_out(t_ref)) {
                 // Bail early if opt-out is enabled
                 return -ECONNREFUSED;
         }
