@@ -50,10 +50,6 @@ const char *config_key_int[] = { NULL, "record_expiry", "spool_max_size",
 const char *config_key_bool[] = { NULL, "rate_limit_enabled", "daemon_recycling_enabled",
                                   "record_retention_enabled", "record_server_delivery_enabled", NULL };
 
-const char *config_probe_bool[] = { NULL, "bertprobe_disabled", "crashprobe_disabled", "hprobe_disabled",
-                                    "journalprobe_disabled", "oopsprobe_disabled", "pstoreprobe_disabled", NULL };
-
-
 static struct configuration config = { { 0 }, { 0 }, { 0 }, false, NULL };
 
 int validate_config_file(char *f)
@@ -152,20 +148,6 @@ bool read_config_from_file(char *config_file, struct configuration *config)
                                         fprintf(stderr, "ERR: missing key with boolean value: %s\n", config_key_bool[i]);
                                         return false;
                                 }
-                        }
-                }
-                for (int i = CONF_PROBE_MIN + 1; i < CONF_PROBE_MAX; i++) {
-                        char *ptr;
-                        ptr = nc_hashmap_get(nc_hashmap_get(keyfile, "settings"), config_probe_bool[i - CONF_PROBE_MIN]);
-                        if (ptr) {
-                                if (strcasecmp(ptr, "TRUE") == 0) {
-                                        config->boolValues[i] = true;
-                                }
-                                if (strcasecmp(ptr, "1") == 0) {
-                                        config->boolValues[i] = true;
-                                }
-                        } else {
-                                config->boolValues[i] = false;
                         }
                 }
         }
@@ -404,9 +386,20 @@ bool record_server_delivery_enabled_config(void)
 bool probe_disabled(char *origin) {
         if (origin != NULL) {
                 initialize_config();
-                for (int i = CONF_PROBE_MIN + 1; i < CONF_PROBE_MAX; i++ ) {
-                        if (startswith(config_probe_bool[i - CONF_PROBE_MIN], origin)) {
-                                return config.boolValues[i];
+                /* Account for _disabled and null byte */
+                if ((strlen(origin) + 10) < MAX_PROBE_DISABLE_LENGTH){
+                        char probe_setting[MAX_PROBE_DISABLE_LENGTH] = "";
+                        char *ptr;
+                        strcat(probe_setting, origin);
+                        strcat(probe_setting, "_disabled");
+                        ptr = nc_hashmap_get(nc_hashmap_get(keyfile, "settings"), probe_setting);
+                        if (ptr) {
+                                if (strcasecmp(ptr, "TRUE") == 0) {
+                                        return true;
+                                }
+                                if (strcasecmp(ptr, "1") == 0) {
+                                        return true;
+                                }
                         }
                 }
         }
