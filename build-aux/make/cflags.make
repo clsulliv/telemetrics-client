@@ -22,7 +22,7 @@ AM_CPPFLAGS = \
 	-I $(top_srcdir)/src \
 	-DTOPSRCDIR=\"$(top_srcdir)\" \
 	-DABSTOPSRCDIR=\"$(abs_top_srcdir)\" \
-	-DDATADIR=\"/usr/share\" \
+	-DDATADIR=\"$(datadir)\" \
 	-DLOCALSTATEDIR=\"$(localstatedir)\" \
 	-DKERNELOOPSDIR=\"$(localstatedir)/cache/telemetry/oops\" \
 	-DPSTOREDIR=\"$(localstatedir)/cache/telemetry/pstore\" \
