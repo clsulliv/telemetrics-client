@@ -930,14 +930,6 @@ int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
 {
         size_t record_origin_len = 0;
         int ret = 0;
-        int k = 0;
-        struct stat unused;
-
-        k = stat(TM_OPT_OUT_FILE, &unused);
-        if (k == 0) {
-                // Bail early if opt-out is enabled
-                return -ECONNREFUSED;
-        }
 
         *t_ref = (struct telem_ref *)malloc(sizeof(struct telem_ref));
         if (*t_ref == NULL) {
