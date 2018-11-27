@@ -989,9 +989,10 @@ int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
                 free((*t_ref)->record_origin);
                 free((*t_ref)->record);
                 free(*t_ref);
-        }
-
-        if (check_opt_out(*t_ref)) {
+        } else if (check_opt_out(*t_ref)) {
+                free((*t_ref)->record_origin);
+                free((*t_ref)->record);
+                free(*t_ref);
                 return -ECONNREFUSED;
         }
 
