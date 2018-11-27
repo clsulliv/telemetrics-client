@@ -103,6 +103,14 @@ void create_teardown(void)
         }
 }
 
+START_TEST(record_test_granulated_optout)
+{
+        int ret;
+        ret = tm_create_record(&ref, 1, "t/t/t", 2000, "optouttest");
+        ck_assert_msg(ret == -ECONNREFUSED);
+}
+END_TEST
+
 START_TEST(record_create_invalid_class1)
 {
         int ret;
@@ -274,6 +282,10 @@ Suite *lib_suite(void)
         tcase_add_test(t, record_set_event_id_null);
         tcase_add_test(t, record_set_event_id_short);
         tcase_add_test(t, record_set_event_id_long);
+        suite_add_tcase(s, t);
+
+        t = tcase_create("opt-out");
+        tcase_add_test(t, record_test_granulated_optout);
         suite_add_tcase(s, t);
 
         return s;
