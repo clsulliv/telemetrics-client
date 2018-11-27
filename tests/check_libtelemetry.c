@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
+#include "configuration.h"
 #include "telemetry.h"
 
 static struct telem_ref *ref = NULL;
@@ -34,6 +35,10 @@ void create_setup(void)
         if (ref) {
                 return;
         }
+
+        char *config_file = ABSTOPSRCDIR "/src/data/example.conf";
+        tm_set_config_file(config_file);
+
         ret = tm_create_record(&ref, 1, "t/t/t", 2000, "test");
 
         /* FIXME: it would be better to SKIP the tests in this case, because
