@@ -782,19 +782,6 @@ void tm_set_config_file(char *c_file)
         set_config_file(c_file);
 }
 
-bool check_opt_out(struct telem_ref *t_ref) {
-        int k = 0;
-        struct stat unused;
-        k = stat(TM_OPT_OUT_FILE, &unused);
-        if (k == 0) {
-                return true;
-        }
-        if (t_ref->record_origin != NULL) {
-                return probe_disabled(t_ref->record_origin);
-        }
-        return false;
-}
-
 /**
  * Helper function for tm_create_record().  Allocate all of the headers
  * for a new telemetrics record. The parameters are passed through from
@@ -926,10 +913,17 @@ free_and_fail:
 }
 
 int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
-                     char *classification, uint32_t payload_version, char *origin)
+                     char *classification, uint32_t payload_version)
 {
-        size_t record_origin_len = 0;
         int ret = 0;
+        int k = 0;
+        struct stat unused;
+
+        k = stat(TM_OPT_OUT_FILE, &unused);
+        if (k == 0) {
+                // Bail early if opt-out is enabled
+                return -ECONNREFUSED;
+        }
 
         *t_ref = (struct telem_ref *)malloc(sizeof(struct telem_ref));
         if (*t_ref == NULL) {
@@ -948,25 +942,6 @@ int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
                 return -ENOMEM;
         }
 
-        if (origin != NULL) {
-                record_origin_len = strlen((char *)origin);
-        }
-
-        (*t_ref)->record_origin = (char *)malloc(sizeof(char) * record_origin_len + 1);
-        if ((*t_ref)->record_origin == NULL) {
-#ifdef DEBUG
-                fprintf(stderr, "CRIT: Out of memory\n");
-#endif
-                free((*t_ref)->record);
-                free(*t_ref);
-                return -ENOMEM;
-        }
-
-        memset((*t_ref)->record_origin, 0, sizeof(char) * record_origin_len + 1);
-        if (origin != NULL) {
-                strncpy((char *)((*t_ref)->record_origin), (char *)origin, record_origin_len);
-        }
-
         // Need to initialize header size, since it is only incremented elsewhere
         (*t_ref)->record->header_size = 0;
 
@@ -978,14 +953,8 @@ int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
 
         /* Set up the headers */
         if ((ret = allocate_header(*t_ref, severity, classification, payload_version)) < 0) {
-                free((*t_ref)->record_origin);
                 free((*t_ref)->record);
                 free(*t_ref);
-        } else if (check_opt_out(*t_ref)) {
-                free((*t_ref)->record_origin);
-                free((*t_ref)->record);
-                free(*t_ref);
-                return -ECONNREFUSED;
         }
 
         return ret;
@@ -1022,8 +991,11 @@ int tm_set_payload(struct telem_ref *t_ref, char *payload)
 {
         size_t payload_len;
         int ret = 0;
+        int k = 0;
+        struct stat unused;
 
-        if (check_opt_out(t_ref)) {
+        k = stat(TM_OPT_OUT_FILE, &unused);
+        if (k == 0) {
                 // Bail early if opt-out is enabled
                 return -ECONNREFUSED;
         }
@@ -1278,8 +1250,11 @@ int tm_send_record(struct telem_ref *t_ref)
         char *data = NULL;
         size_t offset = 0;
         int ret = 0;
+        int k = 0;
+        struct stat unused;
 
-        if (check_opt_out(t_ref)) {
+        k = stat(TM_OPT_OUT_FILE, &unused);
+        if (k == 0) {
                 // Bail early if opt-out is enabled
                 return -ECONNREFUSED;
         }
@@ -1362,10 +1337,6 @@ void tm_free_record(struct telem_ref *t_ref)
 
         if (t_ref == NULL) {
                 return;
-        }
-
-        if (t_ref->record_origin != NULL) {
-                free(t_ref->record_origin);
         }
 
         if (t_ref->record == NULL) {
