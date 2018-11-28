@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
+#include "configuration.h"
 #include "telemetry.h"
 
 static struct telem_ref *ref = NULL;
@@ -34,6 +35,7 @@ void create_setup(void)
         if (ref) {
                 return;
         }
+
         ret = tm_create_record(&ref, 1, "t/t/t", 2000);
 
         /* FIXME: it would be better to SKIP the tests in this case, because
@@ -97,6 +99,39 @@ void create_teardown(void)
                 ref = NULL;
         }
 }
+
+START_TEST(record_test_disabled_false)
+{
+        int ret;
+
+        char *config_file = ABSTOPSRCDIR "/src/data/example.conf";
+        tm_set_config_file(config_file);
+        ret = tm_get_probe_optout("bozotest");
+        ck_assert_msg(ret == 0);
+}
+END_TEST
+
+START_TEST(record_test_disabled_true)
+{
+        int ret;
+
+        char *config_file = ABSTOPSRCDIR "/src/data/example.conf";
+        tm_set_config_file(config_file);
+        ret = tm_get_probe_optout("optouttest");
+        ck_assert_msg(ret == -ECONNREFUSED);
+}
+END_TEST
+
+START_TEST(record_test_disabled_null)
+{
+        int ret;
+
+        char *config_file = ABSTOPSRCDIR "/src/data/example.conf";
+        tm_set_config_file(config_file);
+        ret = tm_get_probe_optout(NULL);
+        ck_assert_msg(ret == 0);
+}
+END_TEST
 
 START_TEST(record_create_invalid_class1)
 {
@@ -269,6 +304,12 @@ Suite *lib_suite(void)
         tcase_add_test(t, record_set_event_id_null);
         tcase_add_test(t, record_set_event_id_short);
         tcase_add_test(t, record_set_event_id_long);
+        suite_add_tcase(s, t);
+
+        t = tcase_create("opt-out");
+        tcase_add_test(t, record_test_disabled_false);
+        tcase_add_test(t, record_test_disabled_true);
+        tcase_add_test(t, record_test_disabled_null);
         suite_add_tcase(s, t);
 
         return s;
