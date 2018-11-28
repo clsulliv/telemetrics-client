@@ -39,6 +39,7 @@ static char *opt_payload = NULL;
 static uint32_t payload_version = 1;
 static char *opt_payload_file = NULL;
 static char *opt_event_id = NULL;
+static char *opt_source = NULL;
 static bool opt_echo = false;
 static bool opt_nopost = false;
 
@@ -47,6 +48,7 @@ static const struct option prog_opts[] = {
         { "echo", no_argument, 0, 'o' },
         { "no-post", no_argument, 0, 'n' },
         { "version", no_argument, 0, 'V' },
+        { "source", required_argument, 0, 'S' },
         { "severity", required_argument, 0, 's' },
         { "class", required_argument, 0, 'c' },
         { "payload", required_argument, 0, 'p' },
@@ -74,6 +76,7 @@ static void print_help(void)
         printf("  -e, --event-id        Event id to use in the record\n");
         printf("  -o, --echo            Echo record to stdout\n");
         printf("  -n, --no-post         Do not post record just print\n");
+        printf("  -S, --source          Optional string to identify the telemetry source\n");
         printf("\n");
 }
 
@@ -98,7 +101,7 @@ int parse_options(int argc, char **argv)
         long unsigned int tmp = 0;
 
         int opt;
-        while ((opt = getopt_long(argc, argv, "hc:Vs:c:p:P:R:e:on", prog_opts, NULL)) != -1) {
+        while ((opt = getopt_long(argc, argv, "hc:Vs:c:p:P:R:e:onS:", prog_opts, NULL)) != -1) {
                 switch (opt) {
                         case 'h':
                                 print_help();
@@ -158,6 +161,9 @@ int parse_options(int argc, char **argv)
                                 break;
                         case 'n':
                                 opt_nopost = true;
+                                break;
+                        case 'S':
+                                opt_source = strdup(optarg);
                                 break;
                 }
         }
@@ -219,6 +225,24 @@ int validate_opts(void)
                                 opt_event_id[result], result, alphab);
                         return ret;
                 }
+        }
+
+        if (opt_source) {
+                len = strlen(opt_source);
+                if ((len == 0) || (len > 120)) {
+                        fprintf(stderr, "Error: Valid size for source identifier "
+                                "is 1-120 chars\n");
+                        return ret;
+                }
+
+                for (int c = 0; c < len; c++) {
+                        if (isascii(opt_source[c]) == 0) {
+                                fprintf(stderr, "Error: Non-ascii characters detected "
+                                        "in source - aborting\n");
+                                return ret;
+                        }
+                }
+
         }
 
         return 1;
@@ -336,6 +360,10 @@ int instanciate_record(struct telem_ref **t_ref, char *payload)
 {
         int ret = 0;
 
+        if((opt_source != NULL ) && (ret = tm_get_probe_optout(opt_source)) < 0) {
+                goto out1;
+        }
+
         if ((ret = tm_create_record(t_ref, (uint32_t)severity,
                                     opt_class, payload_version)) < 0) {
                 goto out1;
@@ -420,6 +448,7 @@ fail:
         free(opt_payload);
         free(opt_event_id);
         free(payload);
+        free(opt_source);
 
         return ret;
 }
