@@ -75,7 +75,7 @@ static bool send_data(char *class)
         int ret;
 
         if ((ret = tm_create_record(&handle, severity, class,
-                                    payload_version, "journalprobe")) < 0) {
+                                    payload_version)) < 0) {
                 telem_log(LOG_ERR, "Failed to create record: %s\n",
                           strerror(-ret));
                 goto fail;

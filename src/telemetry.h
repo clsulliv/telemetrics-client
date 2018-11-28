@@ -87,7 +87,7 @@ void tm_set_config_file(char *c_file);
  * @return 0 on success, or a negative errno-style value on error
  */
 int tm_create_record(struct telem_ref **t_ref, uint32_t severity,
-                     char *classification, uint32_t payload_version, char *origin);
+                     char *classification, uint32_t payload_version);
 
 /**
  * Sets the event_id to a user defined id

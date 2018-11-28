@@ -361,7 +361,7 @@ int instanciate_record(struct telem_ref **t_ref, char *payload)
         int ret = 0;
 
         if ((ret = tm_create_record(t_ref, (uint32_t)severity,
-                                    opt_class, payload_version, opt_source)) < 0) {
+                                    opt_class, payload_version)) < 0) {
                 goto out1;
         }
 
