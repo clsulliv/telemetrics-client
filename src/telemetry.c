@@ -1122,6 +1122,22 @@ static int tm_write_socket(int fd, char *buf, size_t nbytes)
         return ret;
 }
 
+
+/**
+ * Gets whether a probe origin is disabled
+ *
+ * @param origin string to check
+ *
+ * @return true if disabled, otherwise false
+ */
+int tm_get_probe_optout(char *origin)
+{
+        if (origin != NULL) {
+                return probe_disabled(origin);
+        }
+        return false;
+}
+
 /**
  * Obtain a file descriptor for a unix domain socket.
  * Connect to the socket in a non-blocking fashion.

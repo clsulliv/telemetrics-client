@@ -132,4 +132,13 @@ int tm_send_record(struct telem_ref *t_ref);
  */
 void tm_free_record(struct telem_ref *t_ref);
 
+/**
+ * Gets whether a probe origin is disabled
+ *
+ * @param origin string to check
+ *
+ * @return true if disabled, otherwise false
+ */
+int tm_get_probe_optout(char *origin);
+
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */
