@@ -1122,6 +1122,24 @@ static int tm_write_socket(int fd, char *buf, size_t nbytes)
         return ret;
 }
 
+
+/**
+ * Gets whether a probe is disabled
+ *
+ * @param identifier string to check
+ *
+ * @return -ECONNREFUSED if disabed, otherwise 0
+ */
+int tm_get_probe_optout(char *identifier)
+{
+        if (identifier != NULL) {
+                if (probe_disabled(identifier)) {
+                        return -ECONNREFUSED;
+                }
+        }
+        return 0;
+}
+
 /**
  * Obtain a file descriptor for a unix domain socket.
  * Connect to the socket in a non-blocking fashion.

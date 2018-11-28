@@ -131,4 +131,13 @@ int tm_send_record(struct telem_ref *t_ref);
  */
 void tm_free_record(struct telem_ref *t_ref);
 
+/**
+ * Gets whether a probe is disabled
+ *
+ * @param identifier string to check
+ *
+ * @return -ECONNREFUSED if disabed, otherwise 0
+ */
+int tm_get_probe_optout(char *identifier);
+
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */

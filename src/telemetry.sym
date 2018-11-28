@@ -20,4 +20,5 @@ TM_3_0_0 {
 TM_4_0_0 {
   global:
     tm_set_event_id;
+    tm_get_probe_optout;
 } TM_3_0_0;
