@@ -92,6 +92,11 @@ int main(int argc, char **argv)
                 exit(EXIT_FAILURE);
         }
 
+        if((ret = tm_get_probe_optout("hprobe")) < 0) {
+                printf("hprobe is disabled in configuration.\n");
+                goto fail;
+        }
+
         if ((ret = tm_create_record(&tm_handle, severity, classification,
                                     payload_version)) < 0) {
                 printf("Failed to create record: %s\n", strerror(-ret));

@@ -351,6 +351,11 @@ static bool send_data(nc_string **backtrace, uint32_t severity, char *class)
         struct telem_ref *handle = NULL;
         int ret;
 
+        if ((ret = tm_get_probe_optout("crashprobe")) < 0) {
+                telem_log(LOG_NOTICE, "crashprobe is disabled in configuration");
+                goto fail;
+        }
+
         if ((ret = tm_create_record(&handle, severity, class, version)) < 0) {
                 telem_log(LOG_ERR, "Failed to create record: %s",
                           strerror(-ret));
