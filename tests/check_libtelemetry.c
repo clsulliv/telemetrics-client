@@ -296,7 +296,8 @@ Suite *lib_suite(void)
         suite_add_tcase(s, t);
 
         t = tcase_create("opt-out");
-        tcase_add_test(t, record_test_granulated_optout);
+        tcase_add_test(t, record_test_disabled_false);
+        tcase_add_test(t, record_test_disabled_true);
         suite_add_tcase(s, t);
 
         return s;
