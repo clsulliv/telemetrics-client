@@ -103,6 +103,11 @@ int main(int argc, char **argv)
                 }
         }
 
+        if (tm_get_probe_optout("bertprobe")){
+                printf("bertprobe is disabled in configuration.\n");
+                goto fail;
+        }
+
         if (!(ret = allocate_payload_buffer(&payload))) {
                 printf("Unable to allocate more memory.\n");
                 goto fail;

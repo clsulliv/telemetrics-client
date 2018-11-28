@@ -360,6 +360,11 @@ int instanciate_record(struct telem_ref **t_ref, char *payload)
 {
         int ret = 0;
 
+        if((opt_source != NULL ) && tm_get_probe_optout(opt_source)){
+                ret = 1;
+                goto out1;
+        }
+
         if ((ret = tm_create_record(t_ref, (uint32_t)severity,
                                     opt_class, payload_version)) < 0) {
                 goto out1;

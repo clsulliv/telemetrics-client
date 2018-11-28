@@ -74,6 +74,12 @@ static bool send_data(char *class)
         struct telem_ref *handle = NULL;
         int ret;
 
+
+        if (tm_get_probe_optout("journalprobe")){
+                telem_log(LOG_NOTICE, "journalprobe is disabled through configuration.\n");
+                goto fail;
+        }
+
         if ((ret = tm_create_record(&handle, severity, class,
                                     payload_version)) < 0) {
                 telem_log(LOG_ERR, "Failed to create record: %s\n",

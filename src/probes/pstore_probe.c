@@ -36,6 +36,11 @@ static bool send_data(char *backtrace, char *class, uint32_t severity)
         struct telem_ref *handle = NULL;
         int ret;
 
+	if (tm_get_probe_optout("pstoreprobe")){
+		telem_log(LOG_NOTICE, "pstoreprobe is disabled through configuration.\n");
+		return false;
+	}
+
         if ((ret = tm_create_record(&handle, severity, class, version)) < 0) {
                 telem_log(LOG_ERR, "Failed to create record: %s",
                           strerror(-ret));
