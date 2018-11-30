@@ -45,10 +45,12 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 \fBvoid tm_free_record(struct telem_ref *t_ref)\fP
 .sp
 \fBvoid tm_set_config_file(char *c_file)\fP
+.sp
+\fBint tm_get_probe_optout(char *identifier)\fP
 .SH DESCRIPTION
 .sp
 The functions in the telemetry library facilitate the delivery of
-telemetry data to the \fBtelemd\fP(1) service.
+telemetry data to the \fBtelemprobd\fP(1) service.
 .sp
 The function \fBtm_create_record()\fP initializes a telemetry record and
 sets the severity and classification of that record, as well as the
@@ -64,6 +66,9 @@ The function \fBtm_send_record()\fP delivers the record to the local
 .sp
 The function \fBtm_set_config_file()\fP can be used to provide an alternate
 configuration path to the telemetry library.
+.sp
+The function \fBtm_get_probe_optout()\fP can be used to query the configuration
+on whether or not a probe should be ran.
 .SH RETURN VALUES
 .sp
 All these functions return \fB0\fP on success, or a non\-zero return value
@@ -72,7 +77,7 @@ do not return any values.
 .SH SEE ALSO
 .INDENT 0.0
 .IP \(bu 2
-\fBtelemd\fP(1)
+\fBtelemprobd\fP(1)
 .IP \(bu 2
 \fI\%https://github.com/clearlinux/telemetrics\-client\fP
 .IP \(bu 2

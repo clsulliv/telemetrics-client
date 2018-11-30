@@ -27,6 +27,8 @@ SYNOPSIS
 
 ``void tm_set_config_file(char *c_file)``
 
+``int tm_get_probe_optout(char *identifier)``
+
 
 DESCRIPTION
 ===========
@@ -48,6 +50,9 @@ The function ``tm_send_record()`` delivers the record to the local
 
 The function ``tm_set_config_file()`` can be used to provide an alternate
 configuration path to the telemetry library.
+
+The function ``tm_get_probe_optout()`` can be used to query the configuration
+on whether or not a probe should be ran.
 
 
 RETURN VALUES
