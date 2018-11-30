@@ -187,6 +187,11 @@ The client uses the following configuration options from the configuration file:
   records will not be spooled or posted to backend. This configuration key can
   be used in combination with ```record_retention_enabled``` to keep copies of
   telemetry records locally only.
+* \<probe identifier\>_disabled: controls whether a probe is allowed to send data.
+  The probe identifier is usually equal to the name of the probe (e.g., hprobe,
+  crashprobe, etc.). Can be used to granulate what data is sent to the telemetry
+  server. Not guaranteed to work with third party probes, as they may not make
+  use of the libtelemetry tm_get_probe_optout() API call.
 
 
 Data reported
