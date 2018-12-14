@@ -18,6 +18,8 @@ declare -a SERVICES=(
 
 SCRIPT="$0"
 TELEM_DIR=/etc/telemetrics
+TELEM_SRC_CONFIG=/usr/share/defaults/telemetrics/telemetrics.conf
+TELEM_CONFIG=${TELEM_DIR}/telemetrics.conf
 OPT_OUT_FILE=${TELEM_DIR}/opt-out
 TELEM_WRK_DIRS_CONF=/usr/lib/tmpfiles.d/telemetrics-dirs.conf
 
@@ -52,6 +54,27 @@ for_each_service() {
     systemctl $action $service
     [ $? -ne 0 ] && notice "Failed to $action ${service}. Continuing..."
   done
+}
+
+local_config_create() {
+  if [ ! -e ${TELEM_CONFIG} ]; then
+    echo "Creating ${TELEM_CONFIG} from ${TELEM_SRC_CONFIG}."
+    cp ${TELEM_SRC_CONFIG} ${TELEM_CONFIG}
+  fi
+}
+
+config_disable_probe() {
+  local_config_create
+  if [ -z "$(cat ${TELEM_CONFIG} | grep "$1_disabled")" ]; then
+    echo "$1_disabled=1" >> ${TELEM_CONFIG}
+  else
+    sed -i "s:.*$1_disabled=.*:$1_disabled=1:g" ${TELEM_CONFIG}
+  fi
+}
+
+config_enable_probe() {
+  local_config_create
+  sed -i "s:.*$1_disabled=.*:$1_disabled=0:g" ${TELEM_CONFIG}
 }
 
 telem_stop() {
@@ -110,12 +133,20 @@ usage() {
   printf "$format" "opt-out" "Opts out of telemetry, and stops telemetry services"
   printf "$format" "journal" "Prints telemtry journal contents. Use -h argument with"
   printf "$format" ""        "command for more options"
+  printf "$format" "Disable" "Disables a given probe. Use -h argument with"
+  printf "$format" ""        "command for known probes"
+  printf "$format" "enable" "Enables a probe if disabled previously. Use -h"
+  printf "$format" ""       "argument with command for known probes"
   printf "\n"
   exit 2
 }
 
-if [ "$1" != "journal" ] && [ $# -ne 1 ]; then
-     usage
+if [ "$1" = "enable" ] || [ "$1" = "disable" ]; then
+  if [ $# -ne 2 ]; then
+    usage
+  fi
+elif [ "$1" != "journal" ] && [ $# -ne 1 ]; then
+  usage
 fi
 
 if [ $EUID -ne 0 ]; then
@@ -139,6 +170,10 @@ case $SUBCOMMAND in
     telem_is_active ;;
   journal)
     telem_journal_cli "$@" ;;
+  disable)
+    config_disable_probe $2 ;;
+  enable)
+    config_enable_probe $2 ;;
   *)
     notice "Unknown command passed to $SCRIPT"
     usage ;;
