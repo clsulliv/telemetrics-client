@@ -16,6 +16,16 @@ declare -a SERVICES=(
   telempostd.service
 )
 
+declare -a KNOWN_PROBES=(
+  bertprobe
+  crashprobe
+  hprobe
+  journalprobe
+  oopsprobe
+  pstoreprobe
+  swupdprobe
+  )
+
 SCRIPT="$0"
 TELEM_DIR=/etc/telemetrics
 TELEM_SRC_CONFIG=/usr/share/defaults/telemetrics/telemetrics.conf
@@ -63,7 +73,18 @@ local_config_create() {
   fi
 }
 
+list_known_probes() {
+  echo "Known probes:"
+  for probe in "${KNOWN_PROBES[@]}"; do
+    echo "  $probe"
+  done
+}
+
 config_disable_probe() {
+  if [ "$1" = "-h" ]; then
+    list_known_probes
+    return
+  fi
   local_config_create
   if [ -z "$(cat ${TELEM_CONFIG} | grep "$1_disabled")" ]; then
     echo "$1_disabled=1" >> ${TELEM_CONFIG}
@@ -73,6 +94,10 @@ config_disable_probe() {
 }
 
 config_enable_probe() {
+  if [ "$1" = "-h" ]; then
+    list_known_probes
+    return
+  fi
   local_config_create
   sed -i "s:.*$1_disabled=.*:$1_disabled=0:g" ${TELEM_CONFIG}
 }
@@ -121,7 +146,7 @@ telem_journal_cli() {
 }
 
 usage() {
-  format='  %-10s %s\n'
+  format='  %-11s %s\n'
   printf "\n"
   printf "%s - Control actions for telemetry services\n" "$SCRIPT"
   printf "\n"
@@ -133,10 +158,11 @@ usage() {
   printf "$format" "opt-out" "Opts out of telemetry, and stops telemetry services"
   printf "$format" "journal" "Prints telemtry journal contents. Use -h argument with"
   printf "$format" ""        "command for more options"
-  printf "$format" "Disable" "Disables a given probe. Use -h argument with"
+  printf "$format" "disable" "Disables a given probe. Use -h argument with"
   printf "$format" ""        "command for known probes"
   printf "$format" "enable" "Enables a probe if disabled previously. Use -h"
   printf "$format" ""       "argument with command for known probes"
+  printf "$format" "list-probes" "Lists probes known to have enable/disable options"
   printf "\n"
   exit 2
 }
@@ -168,6 +194,8 @@ case $SUBCOMMAND in
     telem_restart ;;
   is-active)
     telem_is_active ;;
+  list-probes)
+    list_known_probes ;;
   journal)
     telem_journal_cli "$@" ;;
   disable)
