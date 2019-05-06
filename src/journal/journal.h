@@ -31,6 +31,7 @@ typedef struct JournalEntry {
         char *record_id;
         char *event_id;
         char *boot_id;
+        char *record_status;
 } JournalEntry;
 
 /* Telemetry journal type */
@@ -85,7 +86,7 @@ void close_journal(TelemJournal *telem_journal);
  */
 int print_journal(TelemJournal *telem_journal, char *classification,
                   char *record_id, char *event_id, char *boot_id,
-                  bool include_record);
+                  char *record_status, bool include_record);
 
 /**
  * Creates a new entry in journal.
@@ -99,7 +100,7 @@ int print_journal(TelemJournal *telem_journal, char *classification,
  * @return 0 on success 1 on failure.
  */
 int new_journal_entry(TelemJournal *telem_journal, char *classification,
-                      time_t timestamp, char *event_id);
+                      time_t timestamp, char *event_id, char *record_status);
 
 /**
  * Checks number of lines in log and prunes the oldest records

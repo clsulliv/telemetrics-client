@@ -56,8 +56,8 @@ static int serialize_journal_entry(struct JournalEntry *entry, char **buff)
                 return -1;
         }
 
-        if (asprintf(buff, "%s\036%lld\036%s\036%s\036%s", entry->record_id, (long long int)entry->timestamp,
-                     entry->classification, entry->event_id, entry->boot_id) < 0) {
+        if (asprintf(buff, "%s\036%lld\036%s\036%s\036%s\036%s", entry->record_id, (long long int)entry->timestamp,
+                     entry->classification, entry->event_id, entry->boot_id, entry->record_status) < 0) {
                 telem_log(LOG_ERR, "Error: Unable to serialize data in buff\n");
                 rc = -1;
         }
@@ -77,6 +77,7 @@ static void free_journal_entry(struct JournalEntry *entry)
                 free(entry->record_id);
                 free(entry->event_id);
                 free(entry->boot_id);
+                free(entry->record_status);
                 free(entry);
         }
 }
@@ -110,7 +111,7 @@ static int deserialize_journal_entry(char *line, struct JournalEntry **entry)
 
         llen = strlen(line);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
                 char *out = NULL;
                 if (offset > llen) {
                         rc = -1;
@@ -138,14 +139,24 @@ static int deserialize_journal_entry(char *line, struct JournalEntry **entry)
                                         e->boot_id = out;
                                         rc = 0;
                                         break;
+                                case 5:
+                                        e->record_status = out;
+                                        break;
                                 default:
-                                        assert(i < 0 && i > 4);
+                                        assert(i >= 0 && i <= 5);
                                         free(out);
                                         rc = 1;
                         }
                 } else {
-                        rc = -1;
-                        break;
+                        if (i == 5) {
+                                if ((e->record_status = strdup("unknown")) == NULL) {
+                                        rc = -1;
+                                        break;
+                                }
+                        } else {
+                                rc = -1;
+                                break;
+                        }
                 }
         }
 
@@ -417,7 +428,7 @@ static void print_record(char *record_id)
 
         recordfp = fopen(filepath, "r");
         if (!recordfp) {
-                telem_perror("Error when opening a record to print");
+                telem_debug("Could not open record file: %s\n", strerror(errno));
                 return;
         }
 
@@ -432,7 +443,7 @@ static void print_record(char *record_id)
 /* Exported function */
 int print_journal(TelemJournal *telem_journal, char *classification,
                   char *record_id, char *event_id, char *boot_id,
-                  bool include_record)
+                  char *record_status, bool include_record)
 {
         int n = 0;
         int rc = 0;
@@ -477,6 +488,9 @@ int print_journal(TelemJournal *telem_journal, char *classification,
                         if (event_id != NULL && strcmp(entry->event_id, event_id) != 0) {
                                 goto skip_print;
                         }
+                        if (record_status != NULL && strcmp(entry->record_status, record_status) != 0) {
+                                goto skip_print;
+                        }
                         // In the case of class checking prefixes is an option
                         if (classification != NULL) {
                                 // Check prefixes when classification ends in /*, otherwise use strcomp
@@ -494,7 +508,7 @@ int print_journal(TelemJournal *telem_journal, char *classification,
                                 continue;
                         }
                         /* print record metadata */
-                        fprintf(stdout, "%-30s %s %s %s %s\n", entry->classification, str_time, entry->record_id, entry->event_id, entry->boot_id);
+                        fprintf(stdout, "%-30s %s %s %s %s %s\n", entry->classification, str_time, entry->record_id, entry->event_id, entry->boot_id, entry->record_status);
                         /* print record content */
                         if (include_record) {
                                 print_record(entry->record_id);
@@ -539,7 +553,7 @@ static int validate_event_id(char *event_id)
 
 /* Exported function */
 int new_journal_entry(TelemJournal *telem_journal, char *classification,
-                      time_t timestamp, char *event_id)
+                      time_t timestamp, char *event_id, char *record_status)
 {
         int rc = 1;
         char boot_id[BOOTID_LEN] = { '\0' };
@@ -559,6 +573,10 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
                 return rc;
         }
 
+        if (record_status == NULL) {
+                return rc;
+        }
+
         entry = malloc(sizeof(struct JournalEntry));
         if (!entry) {
                 telem_log(LOG_CRIT, "CRIT: unable to allocate memory\n");
@@ -568,6 +586,7 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
         entry->record_id = NULL;
         entry->event_id = NULL;
         entry->boot_id = NULL;
+        entry->record_status = NULL;
 
         if (get_random_id(&record_id) != 0) {
                 telem_log(LOG_ERR, "Erorr: Unable to generate random id\n");
@@ -583,6 +602,10 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
                 goto quit;
         }
         if ((entry->event_id = strdup(event_id)) == NULL) {
+                goto quit;
+        }
+
+        if ((entry->record_status = strdup(record_status)) == NULL) {
                 goto quit;
         }
 

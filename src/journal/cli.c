@@ -47,6 +47,7 @@ int main(int argc, char **argv)
         char *record_id = NULL;
         char *event_id = NULL;
         char *classification = NULL;
+        char *record_status = NULL;
         struct TelemJournal *telem_journal = NULL;
 
         /** opts */
@@ -57,13 +58,14 @@ int main(int argc, char **argv)
                 { "event_id", 1, NULL, 'e' },
                 { "classification", 1, NULL, 'c' },
                 { "boot_id", 1, NULL, 'b' },
+                { "record_status", 1, NULL, 's' },
                 { "verbose", 0, NULL, 'V' },
                 { "include_record", 0, NULL, 'i' },
                 { "help", 0, NULL, 'h' },
                 { NULL, 0, NULL, 0 }
         };
 
-        while ((c = getopt_long(argc, argv, "r:e:c:b:Vih", opts, &opt_index)) != -1) {
+        while ((c = getopt_long(argc, argv, "r:e:c:b:s:Vih", opts, &opt_index)) != -1) {
                 switch (c) {
                         case 'r':
                                 record_id = optarg;
@@ -76,6 +78,9 @@ int main(int argc, char **argv)
                                 break;
                         case 'b':
                                 boot_id = optarg;
+                                break;
+                        case 's':
+                                record_status = optarg;
                                 break;
                         case 'V':
                                 verbose_output = 1;
@@ -98,7 +103,7 @@ int main(int argc, char **argv)
                         fprintf(stdout, "%-30s %-27s %-32s %-32s %-36s\n", "Classification", "Time stamp",
                                 "Record ID", "Event ID", "Boot ID");
                 }
-                count = print_journal(telem_journal, classification, record_id, event_id, boot_id, record);
+                count = print_journal(telem_journal, classification, record_id, event_id, boot_id, record_status, record);
                 if (verbose_output) {
                         fprintf(stdout, "Total records: %d\n", count);
                 }

@@ -361,14 +361,14 @@ save_err:
         return;
 }
 
-static void save_entry_to_journal(TelemPostDaemon *daemon, time_t t_stamp, char *headers[])
+static void save_entry_to_journal(TelemPostDaemon *daemon, time_t t_stamp, char *headers[], char *status)
 {
         char *classification_value;
         char *event_id_value;
 
         if (get_header_value(headers[TM_CLASSIFICATION], &classification_value) &&
             get_header_value(headers[TM_EVENT_ID], &event_id_value)) {
-                if (new_journal_entry(daemon->record_journal, classification_value, t_stamp, event_id_value) != 0) {
+                if (new_journal_entry(daemon->record_journal, classification_value, t_stamp, event_id_value, status) != 0) {
                         telem_log(LOG_INFO, "new_journal_entry in process_record: failed saving record entry\n");
                 }
         }
@@ -442,6 +442,7 @@ static bool deliver_record(TelemPostDaemon *daemon, char *headers[], char *body,
         time_t temp = time(NULL);
         struct tm *tm_s = localtime(&temp);
         current_minute = tm_s->tm_min;
+        time_t current_time = time(NULL);
         /* Checks flags */
         bool record_check_passed = true;
         bool byte_check_passed = true;
@@ -466,16 +467,20 @@ static bool deliver_record(TelemPostDaemon *daemon, char *headers[], char *body,
 
         // Drop record
         if (!record_sent && !do_spool) {
+                /** Journal entry **/
+                save_entry_to_journal(daemon, current_time, headers, "dropped");
                 // Not an error condition
                 ret = true;
         }
         // Spool Record
         else if (!record_sent && do_spool) {
+                save_entry_to_journal(daemon, current_time, headers, "unsent/spooled");
                 start_network_bypass(daemon);
                 telem_log(LOG_INFO, "process_record: initializing direct-spool window\n");
                 // False will keep record around
                 ret = false;
         } else {
+                save_entry_to_journal(daemon, current_time, headers, "sent");
                 /* Updates rate limiting arrays if record sent */
                 if (record_burst_enabled) {
                         rate_limit_update(current_minute, daemon->record_window_length,
@@ -532,14 +537,13 @@ bool process_staged_record(char *filename, bool is_retry, TelemPostDaemon *daemo
 
         /* Retries should not be recorded */
         if (is_retry == false) {
-                /** Journal entry **/
-                save_entry_to_journal(daemon, current_time, headers);
                 /** Record retention **/
                 apply_retention_policies(daemon, body);
         }
 
         /** Record delivery **/
         if (!daemon->record_server_delivery_enabled) {
+                save_entry_to_journal(daemon, current_time, headers, "unsent/deliverydisabled");
                 telem_log(LOG_INFO, "record server delivery disabled\n");
                 // Not an error condition
                 ret = true;
@@ -560,6 +564,7 @@ bool process_staged_record(char *filename, bool is_retry, TelemPostDaemon *daemo
                         // Keep record, non error condition
                         ret = false;
                 }
+                save_entry_to_journal(daemon, current_time, headers, "unsent/directspool");
                 goto end_processing_file;
         }
 

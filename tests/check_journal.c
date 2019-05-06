@@ -63,7 +63,7 @@ START_TEST(check_new_entry)
 {
         int ret;
         ret = new_journal_entry(journal, "t/t/t", 1520054957,
-                                "3bc17766547776eb7fc478eb0eb43e43");
+                                "3bc17766547776eb7fc478eb0eb43e43", "unknown");
         ck_assert_int_eq(ret, 0);
         close_journal(journal);
 }
@@ -74,7 +74,7 @@ START_TEST(check_new_entry_bad_class)
         int ret = 0;
         /* has an invalid class */
         ret = new_journal_entry(journal, "t/t", 1520054957,
-                                "3bc17766547776eb7fc478eb0eb43e43");
+                                "3bc17766547776eb7fc478eb0eb43e43", "unknown");
         ck_assert_int_eq(ret, 1);
 }
 END_TEST
@@ -84,7 +84,7 @@ START_TEST(check_new_entry_bad_id)
         int ret = 0;
         /* event_id is invalid */
         ret = new_journal_entry(journal, "t/t/t", 1520054957,
-                                "Xbc17766547776eb7fc478eb0eb43e43");
+                                "Xbc17766547776eb7fc478eb0eb43e43", "unknown");
         ck_assert_int_eq(ret, 1);
 }
 END_TEST
@@ -94,7 +94,7 @@ START_TEST(check_new_entry_null_class)
         int ret = 0;
         /* param is NULL */
         ret = new_journal_entry(journal, NULL, 1520054957,
-                                "3bc17766547776eb7fc478eb0eb43e43");
+                                "3bc17766547776eb7fc478eb0eb43e43", "unknown");
         ck_assert_int_eq(ret, 1);
 }
 END_TEST
@@ -103,7 +103,16 @@ START_TEST(check_new_entry_null_id)
 {
         int ret = 0;
         /* null id */
-        ret = new_journal_entry(journal, "t/t/t", 1520054957, NULL);
+        ret = new_journal_entry(journal, "t/t/t", 1520054957, NULL, "unknown");
+        ck_assert_int_eq(ret, 1);
+}
+END_TEST
+
+START_TEST(check_new_entry_null_status)
+{
+        int ret = 0;
+        /* null id */
+        ret = new_journal_entry(journal, "t/t/t", 1520054957, "3bc17766547776eb7fc478eb0eb43e43", NULL);
         ck_assert_int_eq(ret, 1);
 }
 END_TEST
@@ -121,7 +130,7 @@ void insert_n_records(int n, struct TelemJournal *j)
 {
         for (int i = 0; i < n; i++) {
                 new_journal_entry(j, "t/t/t", 1520054957 + i,
-                                  "3bc17766547776eb7fc478eb0eb43e43");
+                                  "3bc17766547776eb7fc478eb0eb43e43", "unknown");
         }
 }
 
@@ -155,9 +164,9 @@ void journal_entry_setup(void)
 
         insert_n_records(K, journal);
         /* Insert recors with specific values */
-        result = new_journal_entry(journal, "a/b/c", 1520054957, eid);
+        result = new_journal_entry(journal, "a/b/c", 1520054957, eid, "unknown");
         ck_assert(result == 0);
-        result = new_journal_entry(journal, "a/b/d", 1520054957, eid);
+        result = new_journal_entry(journal, "a/b/d", 1520054957, eid, "unknown");
         ck_assert(result == 0);
 
 }
@@ -165,28 +174,28 @@ void journal_entry_setup(void)
 START_TEST(check_journal_print)
 {
         int count = 0;
-        count = print_journal(journal, NULL, NULL, NULL, NULL, 0);
+        count = print_journal(journal, NULL, NULL, NULL, NULL, NULL, 0);
         ck_assert_int_eq(count, K + 2);
 }
 END_TEST
 
 START_TEST(check_journal_filter_by_class)
 {
-        int result = print_journal(journal, "a/b/c", NULL, NULL, NULL, 0);
+        int result = print_journal(journal, "a/b/c", NULL, NULL, NULL, NULL, 0);
         ck_assert_int_eq(result, 1);
 }
 END_TEST
 
 START_TEST(check_journal_filter_by_class_prefix)
 {
-        int result = print_journal(journal, "a/b/*", NULL, NULL, NULL, 0);
+        int result = print_journal(journal, "a/b/*", NULL, NULL, NULL, NULL, 0);
         ck_assert_int_eq(result, 2);
 }
 END_TEST
 
 START_TEST(check_journal_filter_by_event_id)
 {
-        int result = print_journal(journal, NULL, NULL, eid, NULL, 0);
+        int result = print_journal(journal, NULL, NULL, eid, NULL, NULL, 0);
         ck_assert(result == 2);
 }
 END_TEST
@@ -216,9 +225,10 @@ Suite *config_suite(void)
         tcase_add_test(t, check_new_entry_bad_id);
         tcase_add_test(t, check_new_entry_null_class);
         tcase_add_test(t, check_new_entry_null_id);
+        tcase_add_test(t, check_new_entry_null_status);
         suite_add_tcase(s, t);
 
-        t = tcase_create("prunning journal");
+        t = tcase_create("pruning journal");
         tcase_add_unchecked_fixture(t, NULL, teardown);
         tcase_add_test(t, check_journal_file_prune);
         suite_add_tcase(s, t);
