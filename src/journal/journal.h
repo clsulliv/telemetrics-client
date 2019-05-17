@@ -43,6 +43,7 @@ typedef struct TelemJournal {
         int record_count;
         int record_count_limit;
         int (*prune_entry_callback)(char *);
+        bool initialized;
 } TelemJournal;
 
 /**
@@ -66,7 +67,7 @@ TelemJournal *open_journal(const char *journal_file);
  *         reference to journal file pointer and other
  *         members.
  */
-void close_journal(TelemJournal *telem_journal);
+void close_journal(void);
 
 /**
  * Prints journal contents to stdout. Use function parameters
@@ -84,7 +85,7 @@ void close_journal(TelemJournal *telem_journal);
  * @return the number of lines printed to stdout on success, -1
  *         on failure.
  */
-int print_journal(TelemJournal *telem_journal, char *classification,
+int print_journal(char *classification,
                   char *record_id, char *event_id, char *boot_id,
                   char *record_status, bool include_record);
 
@@ -99,7 +100,7 @@ int print_journal(TelemJournal *telem_journal, char *classification,
  *
  * @return 0 on success 1 on failure.
  */
-int new_journal_entry(TelemJournal *telem_journal, char *classification,
+int new_journal_entry(char *classification,
                       time_t timestamp, char *event_id, char *record_status);
 
 /**
@@ -113,6 +114,9 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
  *
  * @return 0 on success, errno on failure
  */
-int prune_journal(TelemJournal *telem_journal, char *tmp_dir);
+int prune_journal(char *tmp_dir);
 
+char *journal_get_latest_record_id(void);
+
+void set_journal_prune_callback(int (*callback)(char *));
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */

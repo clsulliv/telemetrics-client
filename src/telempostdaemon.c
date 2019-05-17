@@ -184,7 +184,6 @@ void initialize_post_daemon(TelemPostDaemon *daemon)
 
         daemon->bypass_http_post_ts = 0;
         daemon->is_spool_valid = is_spool_valid();
-        daemon->record_journal = open_journal(JOURNAL_PATH);
         daemon->fd = inotify_init();
         if (daemon->fd < 0) {
                 telem_perror("Error initializing inotify");
@@ -198,8 +197,8 @@ void initialize_post_daemon(TelemPostDaemon *daemon)
         initialize_rate_limit(daemon);
         initialize_record_delivery(daemon);
         /* Register record retention delete action as a callback to prune entry */
-        if (daemon->record_journal != NULL && daemon->record_retention_enabled) {
-                daemon->record_journal->prune_entry_callback = &delete_record_by_id;
+        if (daemon->record_retention_enabled) {
+                set_journal_prune_callback(&delete_record_by_id);
         }
         daemon->current_spool_size = 0;
 }
@@ -333,14 +332,12 @@ static void save_local_copy(TelemPostDaemon *daemon, char *body)
         int ret = 0;
         char *tmpbuf = NULL;
         FILE *tmpfile = NULL;
-
-        if (daemon == NULL || daemon->record_journal == NULL ||
-            daemon->record_journal->latest_record_id == NULL) {
+        char *record_id = journal_get_latest_record_id();
+        if (daemon == NULL || record_id == NULL) {
                 return;
         }
 
-        ret = asprintf(&tmpbuf, "%s/%s", RECORD_RETENTION_DIR,
-                       daemon->record_journal->latest_record_id);
+        ret = asprintf(&tmpbuf, "%s/%s", RECORD_RETENTION_DIR, record_id);
         if (ret == -1) {
                 telem_log(LOG_ERR, "Failed to allocate memory for record full path, aborting\n");
                 return;
@@ -368,7 +365,7 @@ static void save_entry_to_journal(TelemPostDaemon *daemon, time_t t_stamp, char 
 
         if (get_header_value(headers[TM_CLASSIFICATION], &classification_value) &&
             get_header_value(headers[TM_EVENT_ID], &event_id_value)) {
-                if (new_journal_entry(daemon->record_journal, classification_value, t_stamp, event_id_value, status) != 0) {
+                if (new_journal_entry(classification_value, t_stamp, event_id_value, status) != 0) {
                         telem_log(LOG_INFO, "new_journal_entry in process_record: failed saving record entry\n");
                 }
         }
@@ -771,7 +768,7 @@ void run_daemon(TelemPostDaemon *daemon)
                 }
 
                 /* Check journal records and prune if needed */
-                ret = prune_journal(daemon->record_journal, JOURNAL_TMPDIR);
+                ret = prune_journal(JOURNAL_TMPDIR);
                 if (ret != 0) {
                         telem_log(LOG_WARNING, "Unable to prune journal\n");
                 }
@@ -788,7 +785,7 @@ void close_daemon(TelemPostDaemon *daemon)
                 close(daemon->fd);
         }
 
-        close_journal(daemon->record_journal);
+        close_journal();
 }
 
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */

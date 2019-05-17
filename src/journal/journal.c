@@ -37,6 +37,10 @@
 #include "common.h"
 #include "journal.h"
 
+struct TelemJournal journal = { 0, 0, 0, 0, 0, 0, 0, false };
+
+static void initialize_journal();
+
 /*
  * Packs journal entry values into one line string separated
  * by '\036' RS.
@@ -178,16 +182,18 @@ static int deserialize_journal_entry(char *line, struct JournalEntry **entry)
  * @return record count
  *
  */
-static int get_record_count(struct TelemJournal *telem_journal)
+static int get_record_count()
 {
         int count = 0;
         size_t len;
         ssize_t read;
         char *line = NULL;
 
-        rewind(telem_journal->fptr);
+        initialize_journal();
+
+        rewind(journal.fptr);
         // read until the end line by line
-        while ((read = getline(&line, &len, telem_journal->fptr)) != -1) {
+        while ((read = getline(&line, &len, journal.fptr)) != -1) {
                 count++;
         }
         free(line);
@@ -382,14 +388,14 @@ TelemJournal *open_journal(const char *journal_file)
 }
 
 /* Exported function */
-void close_journal(TelemJournal *telem_journal)
+void close_journal(void)
 {
-        if (telem_journal) {
-                free(telem_journal->boot_id);
-                free(telem_journal->journal_file);
-                free(telem_journal->latest_record_id);
-                fclose(telem_journal->fptr);
-                free(telem_journal);
+        if (journal.initialized) {
+                free(journal.boot_id);
+                free(journal.journal_file);
+                free(journal.latest_record_id);
+                fclose(journal.fptr);
+                journal.initialized = false;
         }
 }
 
@@ -441,7 +447,7 @@ static void print_record(char *record_id)
 }
 
 /* Exported function */
-int print_journal(TelemJournal *telem_journal, char *classification,
+int print_journal(char *classification,
                   char *record_id, char *event_id, char *boot_id,
                   char *record_status, bool include_record)
 {
@@ -455,17 +461,16 @@ int print_journal(TelemJournal *telem_journal, char *classification,
         struct tm ts;
         struct JournalEntry *entry = NULL;
 
-        if (telem_journal == NULL) {
-                return -1;
-        }
+        initialize_journal();
 
-        journal_fileptr = fopen(telem_journal->journal_file, "r");
+
+        journal_fileptr = fopen(journal.journal_file, "r");
         if (!journal_fileptr) {
                 return -1;
         }
 
         // Advance file pointer to line n
-        n = telem_journal->record_count - telem_journal->record_count_limit;
+        n = journal.record_count - journal.record_count_limit;
         if (n > 0) {
                 rc = skip_n_lines(n, journal_fileptr, NULL);
                 if (rc == -1) {
@@ -552,7 +557,7 @@ static int validate_event_id(char *event_id)
 }
 
 /* Exported function */
-int new_journal_entry(TelemJournal *telem_journal, char *classification,
+int new_journal_entry(char *classification,
                       time_t timestamp, char *event_id, char *record_status)
 {
         int rc = 1;
@@ -560,10 +565,7 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
         char *record_id = NULL;
         struct JournalEntry *entry = NULL;
 
-        if (telem_journal == NULL) {
-                telem_log(LOG_ERR, "telem_journal was not initialized\n");
-                return rc;
-        }
+        initialize_journal();
 
         if (validate_classification(classification) != 0) {
                 return rc;
@@ -614,13 +616,13 @@ int new_journal_entry(TelemJournal *telem_journal, char *classification,
         entry->boot_id = strndup(boot_id, BOOTID_LEN - 1);
         entry->timestamp = timestamp;
 
-        if ((rc = save_entry(telem_journal->fptr, entry)) == 0) {
-                telem_journal->record_count = telem_journal->record_count + 1;
-                telem_debug("DEBUG: %d records in journal\n", telem_journal->record_count);
+        if ((rc = save_entry(journal.fptr, entry)) == 0) {
+                journal.record_count = journal.record_count + 1;
+                telem_debug("DEBUG: %d records in journal\n", journal.record_count);
         }
 
-        free(telem_journal->latest_record_id);
-        telem_journal->latest_record_id = strdup(entry->record_id);
+        free(journal.latest_record_id);
+        journal.latest_record_id = strdup(entry->record_id);
 
 quit:
         free_journal_entry(entry);
@@ -629,7 +631,7 @@ quit:
 }
 
 /* Exported function */
-int prune_journal(struct TelemJournal *telem_journal, char *tmp_dir)
+int prune_journal(char *tmp_dir)
 {
 
         int rc = 1;
@@ -637,15 +639,13 @@ int prune_journal(struct TelemJournal *telem_journal, char *tmp_dir)
         int deviation = DEVIATION;
         char *tmp_file_path = NULL;
 
-        if (telem_journal == NULL) {
-                return rc;
-        }
+        initialize_journal();
 
-        if (telem_journal->record_count > (deviation + telem_journal->record_count_limit)) {
-                count = telem_journal->record_count - telem_journal->record_count_limit;
+        if (journal.record_count > (deviation + journal.record_count_limit)) {
+                count = journal.record_count - journal.record_count_limit;
 
                 // jump to line# count
-                if ((rc = skip_n_lines(count, telem_journal->fptr, telem_journal->prune_entry_callback)) != 0) {
+                if ((rc = skip_n_lines(count, journal.fptr, journal.prune_entry_callback)) != 0) {
                         telem_log(LOG_ERR, "Error skipping %d journal lines\n", count);
                         // if rc == -1 (n > #lines in file, change to errno style)
                         return (rc == -1) ? EADDRNOTAVAIL : rc;
@@ -661,29 +661,29 @@ int prune_journal(struct TelemJournal *telem_journal, char *tmp_dir)
                         }
                 }
                 // create new file with rest of file
-                if ((rc = copy_to_tmp(telem_journal->fptr, tmp_file_path)) != 0) {
+                if ((rc = copy_to_tmp(journal.fptr, tmp_file_path)) != 0) {
                         telem_log(LOG_ERR, "Error copying partial journal to temp journal file\n");
                         goto quit;
                 }
                 // close file handler
-                if ((rc = fclose(telem_journal->fptr)) != 0) {
+                if ((rc = fclose(journal.fptr)) != 0) {
                         telem_log(LOG_ERR, "Error closing journal file handler\n");
                         goto quit;
                 }
                 // overwrite file
-                if ((rc = rename(tmp_file_path, telem_journal->journal_file)) != 0) {
+                if ((rc = rename(tmp_file_path, journal.journal_file)) != 0) {
                         telem_log(LOG_ERR, "Error while overwriting journal file\n");
                         goto quit;
                 }
                 // reopen file handler
-                telem_journal->fptr = fopen(telem_journal->journal_file, "a+");
-                if (!telem_journal->fptr) {
+                journal.fptr = fopen(journal.journal_file, "a+");
+                if (!journal.fptr) {
                         telem_log(LOG_ERR, "Error re-opening journal file\n");
                         return rc;
                 }
                 // update record count
-                telem_journal->record_count = telem_journal->record_count - count;
-                telem_debug("DEBUG: record_count: %d\n", telem_journal->record_count);
+                journal.record_count = journal.record_count - count;
+                telem_debug("DEBUG: record_count: %d\n", journal.record_count);
         }
         rc = 0;
 
@@ -691,6 +691,46 @@ quit:
         free(tmp_file_path);
 
         return rc;
+}
+
+void set_journal_prune_callback(int (*callback)(char *)) {
+        initialize_journal();
+        if (callback != NULL) {
+                journal.prune_entry_callback = callback;
+        }
+}
+
+char *journal_get_latest_record_id(void) {
+        initialize_journal();
+        return journal.latest_record_id;
+}
+
+static void initialize_journal(void) {
+        if (journal.initialized == false) {
+                FILE *fptr = NULL;
+                char boot_id[BOOTID_LEN] = { '\0' };
+
+                fptr = fopen(JOURNAL_PATH, "a+");
+                if (fptr == NULL) {
+                        telem_perror("Error while opening journal file");
+                        return;
+                }
+
+                if (read_boot_id(boot_id) != 0) {
+                        telem_perror("Error while reading boot_id");
+                        return;
+                }
+
+                journal.fptr = fptr;
+                journal.journal_file = strdup(JOURNAL_PATH);
+                /* boot_id includes \n at the end, strip RC during duplication */
+                journal.boot_id = strndup(boot_id, BOOTID_LEN - 1);
+                journal.record_count_limit = RECORD_LIMIT;
+                journal.latest_record_id = NULL;
+                journal.prune_entry_callback = NULL;
+                journal.initialized = true;
+                journal.record_count = get_record_count(journal);
+        }
 }
 
 /* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */

@@ -103,11 +103,11 @@ int main(int argc, char **argv)
                         fprintf(stdout, "%-30s %-27s %-32s %-32s %-36s\n", "Classification", "Time stamp",
                                 "Record ID", "Event ID", "Boot ID");
                 }
-                count = print_journal(telem_journal, classification, record_id, event_id, boot_id, record_status, record);
+                count = print_journal(classification, record_id, event_id, boot_id, record_status, record);
                 if (verbose_output) {
                         fprintf(stdout, "Total records: %d\n", count);
                 }
-                close_journal(telem_journal);
+                close_journal();
         } else {
                 fprintf(stderr, "Unable to open journal\n");
                 rc = EXIT_FAILURE;

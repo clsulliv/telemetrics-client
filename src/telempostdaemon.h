@@ -39,7 +39,6 @@ typedef struct TelemPostDaemon {
         char event_buffer[BUFFER_LEN];
         struct pollfd pollfds[NFDS];
         /* Telemetry Journal*/
-        TelemJournal *record_journal;
         /* Time of last failed post */
         time_t bypass_http_post_ts;
         /* Rate limit record and byte arrays */
